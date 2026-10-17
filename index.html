@@ -1,0 +1,723 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>focus 8 – Schlüsselwissen sichern</title>
+  <style>
+    /* Schriften liegen lokal im Projekt (Google Fonts, SIL OFL) – nichts wird von außen nachgeladen */
+    @font-face {
+      font-family: "Quicksand";
+      src: url("fonts/quicksand.woff2") format("woff2");
+      font-weight: 300 700;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: "Raleway";
+      src: url("fonts/raleway.woff2") format("woff2");
+      font-weight: 300 800;
+      font-display: swap;
+    }
+    :root {
+      --schrift-headline: "Quicksand", "Helvetica Neue", Arial, sans-serif;
+      --schrift-text: "Raleway", "Helvetica Neue", Arial, sans-serif;
+      --bg: #17191E;
+      --flaeche: #1F2228;
+      --linie: #2E323A;
+      --label: #5A5D63;
+      --white: #FFFFFF;
+      --grey: #A7A9AC;
+      --gruen: #00F291;
+      --cyan: #0DFFF2;
+      --lila: #5A19A6;
+      --lila-dunkel: #380F66;
+      --satz-groesse: clamp(1.6rem, 3.6vw, 3.2rem);
+    }
+    html, body { height: 100%; margin: 0; }
+    body {
+      display: grid;
+      place-items: center;
+      background: var(--bg);
+      color: var(--white);
+      font-family: var(--schrift-text);
+      overflow: hidden;
+    }
+    main {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 0 16px;
+      text-align: center;
+      transition: opacity 0.4s;
+    }
+    .label {
+      margin: 0 0 1.6rem;
+      font-size: 0.85rem;
+      font-weight: 500;
+      letter-spacing: 0.42em;
+      color: var(--label);
+      text-transform: uppercase;
+    }
+
+    /* Unsichtbares Layout: hier wird gemessen, wo jeder Buchstabe landen soll */
+    .satz {
+      margin: 0;
+      font-family: var(--schrift-headline);
+      font-size: var(--satz-groesse);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      visibility: hidden;
+    }
+    .satz .zeile { display: block; }
+    .satz .wort { display: inline-block; white-space: nowrap; }
+
+    .sub, .regal, .aktionen {
+      opacity: 0;
+      transform: translateY(8px);
+      transition: opacity 0.6s 0.8s, transform 0.6s 0.8s;
+    }
+    .geordnet .sub, .geordnet .regal, .geordnet .aktionen { opacity: 1; transform: none; }
+    /* Das Regal wird nur gemessen, nie verschoben – sonst landen die Teile versetzt */
+    .regal { transform: none; }
+    .sub {
+      margin: 2.4rem 0 0;
+      max-width: 34rem;
+      font-size: 1.05rem;
+      line-height: 1.5;
+      color: var(--grey);
+    }
+
+    .regal {
+      display: flex;
+      gap: 12px;
+      margin: 1.6rem 0 0;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .regal .fach { width: 44px; height: 44px; }
+
+    .aktionen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.9rem;
+      margin-top: 1.8rem;
+      pointer-events: none;
+    }
+    .geordnet .aktionen { pointer-events: auto; }
+
+    button { font: inherit; cursor: pointer; }
+    .knopf {
+      font-size: 1rem;
+      font-weight: 700;
+      border: 0;
+      border-radius: 2px;
+      padding: 0.95rem 2.2rem;
+      background: var(--gruen);
+      color: var(--bg);
+      box-shadow: 0 8px 30px -8px rgba(0, 242, 145, 0.35);
+      transition: background 0.25s, transform 0.15s;
+    }
+    .knopf:hover { background: var(--cyan); transform: translateY(-1px); }
+    .knopf:active { transform: translateY(1px); }
+    .knopf.lila { background: var(--lila); color: var(--white); box-shadow: 0 8px 30px -8px rgba(90, 25, 166, 0.6); }
+    .knopf.lila:hover { background: var(--lila-dunkel); }
+    .leise {
+      border: 0;
+      background: none;
+      padding: 0.3rem;
+      font-size: 0.9rem;
+      color: var(--label);
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .leise:hover { color: var(--grey); }
+
+    /* Sprüche während des Chaos */
+    .spruch {
+      position: fixed;
+      left: 0; right: 0; bottom: 8vh;
+      margin: 0;
+      padding: 0 16px;
+      text-align: center;
+      font-size: 1.05rem;
+      font-style: italic;
+      color: var(--grey);
+      transition: opacity 0.4s;
+      pointer-events: none;
+    }
+    .geordnet ~ .spruch { opacity: 0; }
+
+    /* Alles, was herumfliegt */
+    .flieger {
+      position: fixed;
+      left: 0; top: 0;
+      will-change: transform, filter;
+      user-select: none;
+      z-index: 5;
+    }
+    body.im-check .flieger { visibility: hidden; }
+    body.im-check main { opacity: 0; pointer-events: none; }
+    .buchstabe {
+      font-family: var(--schrift-headline);
+      font-size: var(--satz-groesse);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.01em;
+      color: var(--white);
+      pointer-events: none;
+    }
+    .teil {
+      display: grid;
+      place-items: center;
+      width: 44px; height: 44px;
+      box-sizing: border-box;
+      font-size: 24px;
+      border-radius: 9px;
+      background: rgba(8, 166, 157, 0.12);
+      border: 1px solid rgba(13, 255, 242, 0.25);
+    }
+    .teil.shirt {
+      font-size: 7px;
+      font-weight: 900;
+      line-height: 1.05;
+      letter-spacing: 0.04em;
+      color: var(--cyan);
+      background: var(--lila);
+      border-color: var(--lila);
+      text-align: center;
+    }
+    /* Beschriftung beim Drüberfahren */
+    .teil::after {
+      content: attr(data-label);
+      position: absolute;
+      left: 50%; top: calc(100% + 8px);
+      transform: translateX(-50%);
+      white-space: nowrap;
+      font-size: 0.8rem;
+      font-weight: 500;
+      line-height: 1.3;
+      letter-spacing: 0;
+      color: var(--white);
+      background: var(--lila-dunkel);
+      padding: 4px 8px;
+      border-radius: 4px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      pointer-events: none;
+    }
+    .teil:hover::after { opacity: 1; }
+
+    /* ---------- Check ---------- */
+    .check {
+      position: fixed;
+      inset: 0;
+      display: none;
+      place-items: center;
+      padding: 16px;
+      overflow-y: auto;
+      z-index: 8;
+    }
+    body.im-check .check { display: grid; }
+    .karte {
+      width: 100%;
+      max-width: 36rem;
+      animation: rein 0.4s ease;
+    }
+    @keyframes rein { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    .fortschritt {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 1.6rem;
+    }
+    .fortschritt span {
+      flex: 1;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--linie);
+    }
+    .fortschritt span.erledigt { background: var(--gruen); }
+    .bereich {
+      margin: 0 0 0.6rem;
+      font-size: 0.8rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--label);
+    }
+    .frage {
+      margin: 0 0 1.6rem;
+      font-family: var(--schrift-headline);
+      font-size: clamp(1.3rem, 3vw, 1.75rem);
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    .antworten { display: grid; gap: 10px; }
+    .antwort {
+      text-align: left;
+      padding: 1rem 1.2rem;
+      font-size: 1rem;
+      color: var(--white);
+      background: var(--flaeche);
+      border: 1px solid var(--linie);
+      border-radius: 6px;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .antwort:hover, .antwort:focus-visible { border-color: var(--gruen); background: #232730; outline: none; }
+    .check-fuss {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 1.4rem;
+    }
+    .ergebnis h2 {
+      margin: 0 0 1.4rem;
+      font-family: var(--schrift-headline);
+      font-size: clamp(1.4rem, 3.2vw, 2rem);
+      line-height: 1.25;
+    }
+    .befund {
+      padding: 1.1rem 1.2rem;
+      margin-bottom: 12px;
+      background: var(--flaeche);
+      border: 1px solid var(--linie);
+      border-radius: 6px;
+    }
+    .befund h3 {
+      margin: 0 0 0.3rem;
+      font-size: 0.8rem;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--label);
+    }
+    .befund .stufe { margin: 0 0 0.4rem; font-family: var(--schrift-headline); font-size: 1.2rem; font-weight: 700; }
+    .befund p { margin: 0; color: var(--grey); line-height: 1.5; }
+    .skala { display: flex; gap: 4px; margin: 0.6rem 0 0.8rem; }
+    .skala span { flex: 1; height: 6px; border-radius: 3px; background: var(--linie); }
+    .skala span.voll { background: var(--cyan); }
+    .ergebnis .cta { margin-top: 1.6rem; display: flex; flex-wrap: wrap; gap: 0.8rem; align-items: center; }
+    .hinweis { margin-top: 1.2rem; font-size: 0.85rem; color: var(--label); }
+
+    /* Autofokus-Rahmen: zieht sich beim Scharfstellen um den Satz zusammen */
+    .fokus {
+      position: fixed;
+      left: 0; top: 0;
+      width: 100vw; height: 100vh;
+      pointer-events: none;
+      z-index: 4;
+      opacity: 0.18;
+      transition: transform 1.4s cubic-bezier(.16, 1, .3, 1), width 1.4s cubic-bezier(.16, 1, .3, 1), height 1.4s cubic-bezier(.16, 1, .3, 1), opacity 0.8s;
+    }
+    .fokus span {
+      position: absolute;
+      width: 22px; height: 22px;
+      border: 0 solid var(--cyan);
+    }
+    .fokus span:nth-child(1) { left: 0; top: 0; border-width: 2px 0 0 2px; }
+    .fokus span:nth-child(2) { right: 0; top: 0; border-width: 2px 2px 0 0; }
+    .fokus span:nth-child(3) { left: 0; bottom: 0; border-width: 0 0 2px 2px; }
+    .fokus span:nth-child(4) { right: 0; bottom: 0; border-width: 0 2px 2px 0; }
+    .fokus.scharf { opacity: 0.55; }
+    body.im-check .fokus { opacity: 0; }
+
+    /* leuchtender Cursor-Punkt */
+    .glow {
+      position: fixed;
+      left: 0; top: 0;
+      width: 34px; height: 34px;
+      margin: -17px 0 0 -17px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.55) 0%, rgba(90, 25, 166, 0.9) 35%, rgba(90, 25, 166, 0) 70%);
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 10;
+    }
+  </style>
+</head>
+<body>
+  <main id="buehne">
+    <p class="label">focus 8 · für Projektbetriebe</p>
+    <h1 class="satz" id="satz" aria-label="Sichere das Wissen deiner besten Leute und bau auf, was morgen zählt.">
+      <span class="zeile">Sichere das Wissen deiner besten Leute</span>
+      <span class="zeile">und bau auf, was morgen zählt.</span>
+    </h1>
+    <p class="sub">Für Betriebe mit 20 bis 100 Leuten, deren Können in Köpfen steckt und nicht in Maschinen.</p>
+    <div class="regal" id="regal" aria-hidden="true"></div>
+    <div class="aktionen">
+      <button class="knopf" id="check-start" type="button">Mach den 2-Minuten-Check</button>
+      <button class="leise" id="nochmal" type="button">Nochmal Chaos</button>
+    </div>
+  </main>
+  <p class="spruch" id="spruch" aria-live="polite"></p>
+
+  <div class="fokus" id="fokus" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
+  <section class="check" id="check" aria-live="polite"></section>
+  <div class="glow" id="glow"></div>
+
+  <script>
+    // ================= Inhalte =================
+    // Zubehör der Actionfigur
+    const ZUBEHOER = [
+      { icon: "🎯", label: "Ziele, die auch umgesetzt werden" },
+      { icon: "👂", label: "Erst zuhören, dann beraten" },
+      { icon: "🧠", label: "Denken …" },
+      { icon: "❤️", label: "… und Fühlen" },
+      { icon: "🤖", label: "KI mit System statt Zufall" },
+      { icon: "FORT<br>SCHRITT<br>MACHER", label: "Fortschrittmacher", shirt: true },
+    ];
+    // Sprüche aus dem Alltag der Kunden: das Chaos ist der Ist-Zustand
+    const SPRUECHE = [
+      "„Frag den Franz, der weiß das …“",
+      "„Die Kalkulation? Die hat die Gabi im Kopf.“",
+      "„Steht irgendwo im Ordner von 2019 …“",
+      "„Der Huber geht nächstes Jahr in Pension. Und dann?“",
+      "„Ich hab’s doch schon dreimal gesagt …“",
+      "„Wir hatten da mal ein Konzept …“",
+    ];
+    // Der Check: zwei Bereiche, je drei Fragen. Punkte: 0 = gut aufgestellt, 2 = hängt an wenigen
+    const FRAGEN = [
+      { bereich: "sichern", text: "Gibt es bei euch jemanden, ohne den ein Auftrag nicht sauber läuft?",
+        antworten: ["Nein, das verteilt sich gut", "Ja, ein, zwei Leute", "Ja – und wenn die fehlen, steht’s"] },
+      { bereich: "sichern", text: "Wie viel von dem, was diese Leute wissen, ist irgendwo festgehalten?",
+        antworten: ["Das meiste, und man findet es auch", "Teile davon, verstreut", "Fast nichts – das steckt im Kopf"] },
+      { bereich: "sichern", text: "Wann ist die nächste Schlüsselperson weg – Pension, Wechsel, Karenz?",
+        antworten: ["Nicht absehbar", "In drei bis fünf Jahren", "In den nächsten zwei Jahren"] },
+      { bereich: "aufbauen", text: "Weißt du, welche Kompetenzen dein Betrieb in drei Jahren braucht?",
+        antworten: ["Ja, klar beschrieben", "Ein Gefühl, aber nicht ausformuliert", "Ehrlich gesagt: nein"] },
+      { bereich: "aufbauen", text: "Was passiert mit dem, was ihr aus abgeschlossenen Aufträgen lernt?",
+        antworten: ["Wird besprochen und weitergegeben", "Manchmal, wenn Zeit ist", "Nächster Auftrag, weiter geht’s"] },
+      { bereich: "aufbauen", text: "Und wie steht’s bei euch mit KI?",
+        antworten: ["Steckt in unseren Abläufen drin", "Einzelne probieren herum", "„Da sollten wir mal …“"] },
+    ];
+    const BEREICHE = {
+      sichern: {
+        titel: "Wissen sichern",
+        stufen: [
+          { name: "Gut verteilt", text: "Bei euch hängt nicht alles an einzelnen Köpfen. Das ist seltener, als man denkt – pflegt es." },
+          { name: "Da wackelt was", text: "Ein Teil eures Könnens sitzt in wenigen Personen. Noch geht’s gut – solange alle bleiben." },
+          { name: "Hängt an wenigen Köpfen", text: "Wenn eine Schlüsselperson geht, geht ein Stück Leistungsfähigkeit mit. Höchste Zeit, das Wissen herauszuholen, solange es noch da ist." },
+        ],
+      },
+      aufbauen: {
+        titel: "Für morgen aufbauen",
+        stufen: [
+          { name: "Auf Kurs", text: "Ihr wisst, wohin es geht, und lernt aus euren Aufträgen. Gute Basis, um Vorsprung herauszuholen." },
+          { name: "Gefühl ja, Plan nein", text: "Ihr spürt, was kommt, aber es ist nicht greifbar. So entsteht leicht mehr Einsatz bei weniger Ergebnis." },
+          { name: "Das Tagesgeschäft regiert", text: "Für das, was in drei Jahren zählt, bleibt gerade keine Luft. Genau da lohnt es sich, kurz anzuhalten." },
+        ],
+      },
+    };
+
+    // ================= Animation =================
+    const KONTAKT = "helmut.niessl@focus-8.com";
+    const CHAOS_DAUER = 3400;   // ms, bis alles scharfgestellt wird
+    const LINSE = 160;          // px: so weit reicht die Schärfe rund um die Maus
+    const BASE = ["var(--white)", "var(--white)", "var(--white)", "var(--grey)"];
+    const ACCENT = ["var(--gruen)", "var(--cyan)"];
+    const REICHWEITE = 450;     // px: ab dieser Entfernung zum Check-Button ist alles ruhig
+
+    const buehne = document.getElementById("buehne");
+    const satz = document.getElementById("satz");
+    const regal = document.getElementById("regal");
+    const checkStart = document.getElementById("check-start");
+    const nochmal = document.getElementById("nochmal");
+    const spruch = document.getElementById("spruch");
+    const check = document.getElementById("check");
+    const glow = document.getElementById("glow");
+    const fokus = document.getElementById("fokus");
+    const ruhig = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    const zufall = (a, b) => a + Math.random() * (b - a);
+    const pick = list => list[Math.floor(Math.random() * list.length)];
+
+    // Layout vorbereiten: jeden Buchstaben des Satzes einzeln messbar machen
+    const ziele = [];
+    satz.querySelectorAll(".zeile").forEach(zeile => {
+      const woerter = zeile.textContent.trim().split(" ");
+      zeile.textContent = "";
+      woerter.forEach((w, i) => {
+        const wort = document.createElement("span");
+        wort.className = "wort";
+        [...w].forEach(ch => {
+          const s = document.createElement("span");
+          s.textContent = ch;
+          wort.appendChild(s);
+          ziele.push(s);
+        });
+        zeile.appendChild(wort);
+        if (i < woerter.length - 1) zeile.appendChild(document.createTextNode(" "));
+      });
+    });
+    const faecher = ZUBEHOER.map(() => {
+      const f = document.createElement("div");
+      f.className = "fach";
+      regal.appendChild(f);
+      return f;
+    });
+
+    // Flieger erzeugen: Buchstaben + Zubehör
+    const flieger = [];
+    ziele.forEach(ziel => {
+      const el = document.createElement("div");
+      el.className = "flieger buchstabe";
+      el.textContent = ziel.textContent;
+      el.setAttribute("aria-hidden", "true");
+      document.body.appendChild(el);
+      flieger.push({ el, ziel, typ: "buchstabe" });
+    });
+    ZUBEHOER.forEach((z, i) => {
+      const el = document.createElement("div");
+      el.className = "flieger teil" + (z.shirt ? " shirt" : "");
+      el.innerHTML = z.icon;
+      el.dataset.label = z.label;
+      el.setAttribute("aria-hidden", "true");
+      document.body.appendChild(el);
+      flieger.push({ el, ziel: faecher[i], typ: "teil" });
+    });
+    const buchstaben = flieger.filter(f => f.typ === "buchstabe");
+
+    let zustand = "start";
+    let maus = { x: -999, y: -999 };
+    let energie = 0;
+    let ordnenTimer, spruchTimer;
+
+    function setze(f) {
+      f.el.style.transform = `translate(${f.x}px, ${f.y}px) rotate(${f.rot}deg)`;
+    }
+
+    // Unscharf: alles treibt langsam und verschwommen – nur wo die Maus ist, wird es scharf
+    function chaos() {
+      zustand = "chaos";
+      buehne.classList.remove("geordnet");
+      fokus.classList.remove("scharf");
+      fokus.style.transform = "translate(0, 0)";
+      fokus.style.width = "100vw";
+      fokus.style.height = "100vh";
+      const W = innerWidth, H = innerHeight;
+      flieger.forEach(f => {
+        f.el.style.transition = "transform 1.2s cubic-bezier(.16,1,.3,1), filter 0.6s, opacity 0.6s, color 0.6s";
+        if (f.x === undefined) { f.el.style.transition = "none"; }
+        f.b = f.el.offsetWidth; f.h = f.el.offsetHeight;
+        f.x = zufall(0, W - f.b); f.y = zufall(0, H - f.h); f.rot = zufall(-12, 12);
+        const tempo = zufall(0.15, 0.5);
+        const winkel = zufall(0, Math.PI * 2);
+        f.vx = Math.cos(winkel) * tempo;
+        f.vy = Math.sin(winkel) * tempo;
+        f.el.style.opacity = 0.5;
+        f.el.style.filter = "blur(6px)";
+        if (f.typ === "buchstabe") f.el.style.color = "var(--grey)";
+        setze(f);
+      });
+      let i = Math.floor(Math.random() * SPRUECHE.length);
+      spruch.textContent = SPRUECHE[i];
+      clearInterval(spruchTimer);
+      spruchTimer = setInterval(() => { spruch.textContent = SPRUECHE[++i % SPRUECHE.length]; }, 1300);
+      // erst nach dem sanften Verteilen ins Treiben übergehen
+      setTimeout(() => {
+        if (zustand !== "chaos") return;
+        flieger.forEach(f => { f.el.style.transition = "filter 0.25s, opacity 0.25s"; });
+        requestAnimationFrame(schritt);
+      }, f0 ? 0 : 900);
+      f0 = false;
+      clearTimeout(ordnenTimer);
+      ordnenTimer = setTimeout(() => { clearInterval(spruchTimer); ordnen(); }, CHAOS_DAUER);
+    }
+    let f0 = true;
+
+    function schritt() {
+      if (zustand !== "chaos") return;
+      const W = innerWidth, H = innerHeight;
+      flieger.forEach(f => {
+        f.x += f.vx; f.y += f.vy;
+        if (f.x < 0 || f.x > W - f.b) f.vx *= -1;
+        if (f.y < 0 || f.y > H - f.h) f.vy *= -1;
+        // Schärfe wie bei einer Linse: nah an der Maus scharf und hell, weiter weg verschwommen
+        const d = Math.hypot(f.x + f.b / 2 - maus.x, f.y + f.h / 2 - maus.y);
+        const t = Math.min(1, d / LINSE);
+        f.el.style.filter = `blur(${(t * 6).toFixed(1)}px)`;
+        f.el.style.opacity = (1 - t * 0.5).toFixed(2);
+        setze(f);
+      });
+      requestAnimationFrame(schritt);
+    }
+
+    function zielPosition(f) {
+      const r = f.ziel.getBoundingClientRect();
+      return { x: r.left, y: r.top };
+    }
+
+    // Scharfstellen: alles gleitet ruhig an seinen Platz, die Unschärfe verschwindet
+    function ordnen() {
+      zustand = "geordnet";
+      buehne.classList.add("geordnet");
+      // Zufällige Reihenfolge, in der Buchstaben bei Mausnähe aufleuchten
+      const reihenfolge = buchstaben.map((_, i) => i).sort(() => Math.random() - 0.5);
+      buchstaben.forEach((f, i) => {
+        f.rang = reihenfolge[i];
+        f.base = pick(BASE);
+        f.accent = pick(ACCENT);
+      });
+      flieger.forEach((f, i) => {
+        const ziel = zielPosition(f);
+        const dauer = ruhig ? 0 : 1.6;
+        const verzoegerung = ruhig ? 0 : (i / flieger.length) * 0.35;
+        f.el.style.transition = `transform ${dauer}s cubic-bezier(.16,1,.3,1) ${verzoegerung}s, filter ${dauer * 0.8}s ease ${verzoegerung}s, opacity ${dauer * 0.6}s ${verzoegerung}s, color 0.3s`;
+        f.x = ziel.x; f.y = ziel.y; f.rot = 0;
+        f.el.style.filter = "blur(0px)";
+        f.el.style.opacity = 1;
+        setze(f);
+      });
+      rahmenSetzen();
+      malen();
+    }
+
+    // Autofokus-Ecken eng um den Satz legen
+    function rahmenSetzen() {
+      const r = satz.getBoundingClientRect();
+      const rand = 22;
+      fokus.style.transform = `translate(${r.left - rand}px, ${r.top - rand}px)`;
+      fokus.style.width = `${r.width + rand * 2}px`;
+      fokus.style.height = `${r.height + rand * 2}px`;
+      fokus.classList.add("scharf");
+    }
+
+    // Je näher die Maus am Check-Button, desto mehr Buchstaben leuchten
+    function malen() {
+      const min = 4, max = Math.round(buchstaben.length * 0.45);
+      const anzahl = Math.round(min + energie * (max - min));
+      buchstaben.forEach(f => { f.el.style.color = f.rang < anzahl ? f.accent : f.base; });
+    }
+
+    nochmal.addEventListener("click", () => { if (zustand === "geordnet") chaos(); });
+
+    addEventListener("pointermove", e => {
+      maus = { x: e.clientX, y: e.clientY };
+      glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
+      glow.style.opacity = 1;
+      if (zustand !== "geordnet") return;
+      const r = checkStart.getBoundingClientRect();
+      const dx = Math.max(r.left - e.clientX, 0, e.clientX - r.right);
+      const dy = Math.max(r.top - e.clientY, 0, e.clientY - r.bottom);
+      energie = Math.max(0, 1 - Math.hypot(dx, dy) / REICHWEITE);
+      malen();
+    });
+    document.addEventListener("pointerleave", () => {
+      glow.style.opacity = 0;
+      maus = { x: -999, y: -999 };
+      energie = 0;
+      if (zustand === "geordnet") malen();
+    });
+
+    // Fenstergröße geändert: Ordnung neu ausrichten
+    function neuAusrichten() {
+      if (zustand !== "geordnet") return;
+      flieger.forEach(f => {
+        const ziel = zielPosition(f);
+        f.el.style.transition = "none";
+        f.x = ziel.x; f.y = ziel.y; f.rot = 0;
+        setze(f);
+      });
+      fokus.style.transition = "none";
+      rahmenSetzen();
+      requestAnimationFrame(() => { fokus.style.transition = ""; });
+    }
+    addEventListener("resize", neuAusrichten);
+
+    // ================= Check =================
+    let antworten = [];
+
+    function checkOeffnen() {
+      antworten = [];
+      document.body.classList.add("im-check");
+      zeigeFrage(0);
+    }
+
+    function checkSchliessen() {
+      document.body.classList.remove("im-check");
+      check.innerHTML = "";
+      neuAusrichten();
+      checkStart.focus();
+    }
+
+    function zeigeFrage(n) {
+      const f = FRAGEN[n];
+      check.innerHTML = `
+        <div class="karte">
+          <div class="fortschritt">${FRAGEN.map((_, i) => `<span class="${i < n ? "erledigt" : ""}"></span>`).join("")}</div>
+          <p class="bereich">${BEREICHE[f.bereich].titel} · Frage ${n + 1} von ${FRAGEN.length}</p>
+          <h2 class="frage">${f.text}</h2>
+          <div class="antworten">
+            ${f.antworten.map((a, i) => `<button class="antwort" type="button" data-punkte="${i}">${a}</button>`).join("")}
+          </div>
+          <div class="check-fuss">
+            <button class="leise" type="button" data-aktion="zurueck">${n === 0 ? "Abbrechen" : "Zurück"}</button>
+          </div>
+        </div>`;
+      check.querySelectorAll(".antwort").forEach(b => b.addEventListener("click", () => {
+        antworten[n] = Number(b.dataset.punkte);
+        n + 1 < FRAGEN.length ? zeigeFrage(n + 1) : zeigeErgebnis();
+      }));
+      check.querySelector("[data-aktion=zurueck]").addEventListener("click", () => {
+        n === 0 ? checkSchliessen() : zeigeFrage(n - 1);
+      });
+      check.querySelector(".antwort").focus();
+    }
+
+    function zeigeErgebnis() {
+      const befunde = Object.entries(BEREICHE).map(([key, b]) => {
+        const punkte = FRAGEN.reduce((s, f, i) => f.bereich === key ? s + antworten[i] : s, 0);
+        const max = FRAGEN.filter(f => f.bereich === key).length * 2;
+        const stufe = b.stufen[punkte <= 1 ? 0 : punkte <= 3 ? 1 : 2];
+        return { titel: b.titel, stufe, punkte, max };
+      });
+      const gesamt = befunde.reduce((s, b) => s + b.punkte, 0);
+      const ueberschrift = gesamt <= 3
+        ? "Respekt. Bei euch hängt erstaunlich wenig am Zufall."
+        : gesamt <= 7
+          ? "Da steckt mehr in einzelnen Köpfen, als euch lieb sein kann."
+          : "Ehrliche Antworten. Und genau da fängt die Arbeit an.";
+      // E-Mail mit dem Ergebnis vorbefüllen – abgeschickt wird sie nur vom Besucher selbst
+      const mail = "mailto:" + KONTAKT
+        + "?subject=" + encodeURIComponent("2-Minuten-Check: Lass uns reden")
+        + "&body=" + encodeURIComponent(
+          "Hallo Helmut,\n\nich habe deinen 2-Minuten-Check gemacht:\n\n"
+          + befunde.map(b => `${b.titel}: ${b.stufe.name} (${b.punkte} von ${b.max})`).join("\n")
+          + "\n\nLass uns 30 Minuten drüber reden. Gut passen würde mir:\n\n\nViele Grüße\n");
+      check.innerHTML = `
+        <div class="karte ergebnis">
+          <div class="fortschritt">${FRAGEN.map(() => `<span class="erledigt"></span>`).join("")}</div>
+          <p class="bereich">Dein Ergebnis</p>
+          <h2>${ueberschrift}</h2>
+          ${befunde.map(b => `
+            <div class="befund">
+              <h3>${b.titel}</h3>
+              <p class="stufe">${b.stufe.name}</p>
+              <div class="skala" aria-label="${b.punkte} von ${b.max} Punkten, mehr heißt: hängt stärker an wenigen">
+                ${Array.from({ length: b.max }, (_, i) => `<span class="${i < b.punkte ? "voll" : ""}"></span>`).join("")}
+              </div>
+              <p>${b.stufe.text}</p>
+            </div>`).join("")}
+          <div class="cta">
+            <a class="knopf" href="${mail}" style="text-decoration:none">Lass uns 30 Minuten drüber reden</a>
+            <button class="leise" type="button" data-aktion="neu">Check wiederholen</button>
+            <button class="leise" type="button" data-aktion="ende">Zurück zum Anfang</button>
+          </div>
+          <p class="hinweis">Deine Antworten bleiben in deinem Browser. Der Button öffnet nur eine vorbereitete E-Mail mit deinem Ergebnis – abschicken tust du sie selbst.</p>
+        </div>`;
+      check.querySelector("[data-aktion=neu]").addEventListener("click", checkOeffnen);
+      check.querySelector("[data-aktion=ende]").addEventListener("click", checkSchliessen);
+    }
+
+    checkStart.addEventListener("click", checkOeffnen);
+    addEventListener("keydown", e => {
+      if (e.key === "Escape" && document.body.classList.contains("im-check")) checkSchliessen();
+    });
+
+    // Los geht's – erst nach dem Laden der Schrift messen
+    Promise.all([document.fonts.load('700 1em "Quicksand"'), document.fonts.load('400 1em "Raleway"')])
+      .catch(() => {})
+      .then(() => document.fonts.ready)
+      .then(() => ruhig ? ordnen() : chaos());
+  </script>
+</body>
+</html>
