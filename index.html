@@ -8,13 +8,13 @@
     /* Schriften liegen lokal im Projekt (Google Fonts, SIL OFL) – nichts wird von außen nachgeladen */
     @font-face {
       font-family: "Quicksand";
-      src: url("fonts/quicksand.woff2") format("woff2");
+      src: url("quicksand.woff2") format("woff2");
       font-weight: 300 700;
       font-display: swap;
     }
     @font-face {
       font-family: "Raleway";
-      src: url("fonts/raleway.woff2") format("woff2");
+      src: url("raleway.woff2") format("woff2");
       font-weight: 300 800;
       font-display: swap;
     }
@@ -133,6 +133,26 @@
       text-underline-offset: 3px;
     }
     .leise:hover { color: var(--grey); }
+
+    /* Fußzeile mit Name und LinkedIn */
+    .fuss {
+      position: fixed;
+      left: 0; right: 0; bottom: 20px;
+      margin: 0;
+      padding: 0 16px;
+      text-align: center;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      color: var(--label);
+      opacity: 0;
+      transition: opacity 0.6s 1.2s;
+      pointer-events: none;
+    }
+    .geordnet ~ .fuss { opacity: 1; pointer-events: auto; }
+    body.im-check .fuss { opacity: 0; pointer-events: none; transition-delay: 0s; }
+    .fuss strong { color: var(--grey); font-weight: 600; }
+    .fuss a { color: var(--grey); text-decoration: none; border-bottom: 1px solid var(--linie); transition: color 0.2s, border-color 0.2s; }
+    .fuss a:hover { color: var(--cyan); border-color: var(--cyan); }
 
     /* Sprüche während des Chaos */
     .spruch {
@@ -349,6 +369,7 @@
     </div>
   </main>
   <p class="spruch" id="spruch" aria-live="polite"></p>
+  <p class="fuss"><strong>Helmut Niessl</strong> · focus 8 · <a href="https://www.linkedin.com/in/helmut-niessl/" target="_blank" rel="noopener">LinkedIn ↗</a></p>
 
   <div class="fokus" id="fokus" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
   <section class="check" id="check" aria-live="polite"></section>
