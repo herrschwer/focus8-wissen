@@ -21,16 +21,18 @@
     :root {
       --schrift-headline: "Quicksand", "Helvetica Neue", Arial, sans-serif;
       --schrift-text: "Raleway", "Helvetica Neue", Arial, sans-serif;
-      --bg: #17191E;
-      --flaeche: #1F2228;
-      --linie: #2E323A;
-      --label: #5A5D63;
+      --bg: #240A42;                          /* Lila sehr dunkel */
+      --flaeche: rgba(255, 255, 255, 0.05);
+      --flaeche-hover: rgba(255, 255, 255, 0.09);
+      --linie: rgba(255, 255, 255, 0.14);
+      --label: rgba(255, 255, 255, 0.55);
       --white: #FFFFFF;
-      --grey: #A7A9AC;
+      --grey: rgba(255, 255, 255, 0.78);
       --gruen: #00F291;
       --cyan: #0DFFF2;
       --lila: #5A19A6;
       --lila-dunkel: #380F66;
+      --tuerkis: #08A69D;
       --satz-groesse: clamp(1.6rem, 3.6vw, 3.2rem);
     }
     html, body { height: 100%; margin: 0; }
@@ -134,25 +136,51 @@
     }
     .leise:hover { color: var(--grey); }
 
-    /* Fußzeile mit Name und LinkedIn */
-    .fuss {
-      position: fixed;
-      left: 0; right: 0; bottom: 20px;
-      margin: 0;
-      padding: 0 16px;
-      text-align: center;
-      font-size: 0.85rem;
-      letter-spacing: 0.04em;
-      color: var(--label);
-      opacity: 0;
-      transition: opacity 0.6s 1.2s;
-      pointer-events: none;
+    /* Absender: dezente Signatur unter dem Ergebnis, konkurriert nicht mit der CTA */
+    .absender {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.8rem 1.2rem;
+      margin-top: 1.8rem;
+      padding-top: 1.2rem;
+      border-top: 1px solid var(--linie);
+      text-align: left;
     }
-    .geordnet ~ .fuss { opacity: 1; pointer-events: auto; }
-    body.im-check .fuss { opacity: 0; pointer-events: none; transition-delay: 0s; }
-    .fuss strong { color: var(--grey); font-weight: 600; }
-    .fuss a { color: var(--grey); text-decoration: none; border-bottom: 1px solid var(--linie); transition: color 0.2s, border-color 0.2s; }
-    .fuss a:hover { color: var(--cyan); border-color: var(--cyan); }
+    .absender .name {
+      margin: 0;
+      font-family: var(--schrift-headline);
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--white);
+    }
+    .absender .rolle {
+      margin: 0.1rem 0 0;
+      font-size: 0.85rem;
+      color: var(--grey);
+    }
+    .linkedin {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--cyan);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(13, 255, 242, 0.4);
+      padding-bottom: 2px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .linkedin:hover { color: var(--white); border-color: var(--white); }
+    .linkedin svg { width: 15px; height: 15px; fill: currentColor; }
+
+    /* niedrige Bildschirme: Abstände straffen, damit alles ohne Scrollen passt */
+    @media (max-height: 760px) {
+      .label { margin-bottom: 1rem; }
+      .sub { margin-top: 1.8rem; }
+      .regal, .aktionen { margin-top: 1.2rem; }
+    }
 
     /* Sprüche während des Chaos */
     .spruch {
@@ -283,7 +311,7 @@
       border-radius: 6px;
       transition: border-color 0.2s, background 0.2s;
     }
-    .antwort:hover, .antwort:focus-visible { border-color: var(--gruen); background: #232730; outline: none; }
+    .antwort:hover, .antwort:focus-visible { border-color: var(--gruen); background: var(--flaeche-hover); outline: none; }
     .check-fuss {
       display: flex;
       justify-content: space-between;
@@ -346,7 +374,7 @@
       width: 34px; height: 34px;
       margin: -17px 0 0 -17px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(255, 255, 255, 0.55) 0%, rgba(90, 25, 166, 0.9) 35%, rgba(90, 25, 166, 0) 70%);
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.6) 0%, rgba(8, 166, 157, 0.85) 35%, rgba(8, 166, 157, 0) 70%);
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.3s;
@@ -369,7 +397,6 @@
     </div>
   </main>
   <p class="spruch" id="spruch" aria-live="polite"></p>
-  <p class="fuss"><strong>Helmut Niessl</strong> · focus 8 · <a href="https://www.linkedin.com/in/helmut-niessl/" target="_blank" rel="noopener">LinkedIn ↗</a></p>
 
   <div class="fokus" id="fokus" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
   <section class="check" id="check" aria-live="polite"></section>
@@ -433,9 +460,8 @@
     const KONTAKT = "helmut.niessl@focus-8.com";
     const CHAOS_DAUER = 3400;   // ms, bis alles scharfgestellt wird
     const LINSE = 160;          // px: so weit reicht die Schärfe rund um die Maus
-    const BASE = ["var(--white)", "var(--white)", "var(--white)", "var(--grey)"];
-    const ACCENT = ["var(--gruen)", "var(--cyan)"];
-    const REICHWEITE = 450;     // px: ab dieser Entfernung zum Check-Button ist alles ruhig
+    // Signalfarbe nur auf den zwei Kernbegriffen = die zwei Bereiche des Checks (sichern / aufbauen)
+    const SIGNALWOERTER = ["Wissen", "morgen"];
 
     const buehne = document.getElementById("buehne");
     const satz = document.getElementById("satz");
@@ -449,7 +475,6 @@
     const ruhig = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const zufall = (a, b) => a + Math.random() * (b - a);
-    const pick = list => list[Math.floor(Math.random() * list.length)];
 
     // Layout vorbereiten: jeden Buchstaben des Satzes einzeln messbar machen
     const ziele = [];
@@ -459,9 +484,11 @@
       woerter.forEach((w, i) => {
         const wort = document.createElement("span");
         wort.className = "wort";
+        const signal = SIGNALWOERTER.includes(w.replace(/[.,]/g, ""));
         [...w].forEach(ch => {
           const s = document.createElement("span");
           s.textContent = ch;
+          if (signal) s.dataset.signal = "1";
           wort.appendChild(s);
           ziele.push(s);
         });
@@ -484,7 +511,7 @@
       el.textContent = ziel.textContent;
       el.setAttribute("aria-hidden", "true");
       document.body.appendChild(el);
-      flieger.push({ el, ziel, typ: "buchstabe" });
+      flieger.push({ el, ziel, typ: "buchstabe", signal: ziel.dataset.signal === "1" });
     });
     ZUBEHOER.forEach((z, i) => {
       const el = document.createElement("div");
@@ -499,7 +526,6 @@
 
     let zustand = "start";
     let maus = { x: -999, y: -999 };
-    let energie = 0;
     let ordnenTimer, spruchTimer;
 
     function setze(f) {
@@ -571,13 +597,6 @@
     function ordnen() {
       zustand = "geordnet";
       buehne.classList.add("geordnet");
-      // Zufällige Reihenfolge, in der Buchstaben bei Mausnähe aufleuchten
-      const reihenfolge = buchstaben.map((_, i) => i).sort(() => Math.random() - 0.5);
-      buchstaben.forEach((f, i) => {
-        f.rang = reihenfolge[i];
-        f.base = pick(BASE);
-        f.accent = pick(ACCENT);
-      });
       flieger.forEach((f, i) => {
         const ziel = zielPosition(f);
         const dauer = ruhig ? 0 : 1.6;
@@ -602,11 +621,9 @@
       fokus.classList.add("scharf");
     }
 
-    // Je näher die Maus am Check-Button, desto mehr Buchstaben leuchten
+    // Scharfgestellt: Weiß, nur die Kernbegriffe in der Signalfarbe
     function malen() {
-      const min = 4, max = Math.round(buchstaben.length * 0.45);
-      const anzahl = Math.round(min + energie * (max - min));
-      buchstaben.forEach(f => { f.el.style.color = f.rang < anzahl ? f.accent : f.base; });
+      buchstaben.forEach(f => { f.el.style.color = f.signal ? "var(--gruen)" : "var(--white)"; });
     }
 
     nochmal.addEventListener("click", () => { if (zustand === "geordnet") chaos(); });
@@ -615,18 +632,10 @@
       maus = { x: e.clientX, y: e.clientY };
       glow.style.transform = `translate(${e.clientX}px, ${e.clientY}px)`;
       glow.style.opacity = 1;
-      if (zustand !== "geordnet") return;
-      const r = checkStart.getBoundingClientRect();
-      const dx = Math.max(r.left - e.clientX, 0, e.clientX - r.right);
-      const dy = Math.max(r.top - e.clientY, 0, e.clientY - r.bottom);
-      energie = Math.max(0, 1 - Math.hypot(dx, dy) / REICHWEITE);
-      malen();
     });
     document.addEventListener("pointerleave", () => {
       glow.style.opacity = 0;
       maus = { x: -999, y: -999 };
-      energie = 0;
-      if (zustand === "geordnet") malen();
     });
 
     // Fenstergröße geändert: Ordnung neu ausrichten
@@ -722,6 +731,16 @@
             <a class="knopf" href="${mail}" style="text-decoration:none">Lass uns 30 Minuten drüber reden</a>
             <button class="leise" type="button" data-aktion="neu">Check wiederholen</button>
             <button class="leise" type="button" data-aktion="ende">Zurück zum Anfang</button>
+          </div>
+          <div class="absender">
+            <div>
+              <p class="name">Helmut Niessl</p>
+              <p class="rolle">Systemischer Berater · focus 8</p>
+            </div>
+            <a class="linkedin" href="https://www.linkedin.com/in/helmut-niessl/" target="_blank" rel="noopener">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.35V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.56V9h3.56v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.73v20.54C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.73C24 .77 23.2 0 22.22 0z"/></svg>
+              Auf LinkedIn vernetzen
+            </a>
           </div>
           <p class="hinweis">Deine Antworten bleiben in deinem Browser. Der Button öffnet nur eine vorbereitete E-Mail mit deinem Ergebnis – abschicken tust du sie selbst.</p>
         </div>`;
